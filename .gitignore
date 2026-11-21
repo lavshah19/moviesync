@@ -1,0 +1,5 @@
+# taste-skill (local only, installed via `npx skills add Leonxlnx/taste-skill`)
+.claude/skills/
+.agents/
+skills-lock.json
+**/.taste-skill/
