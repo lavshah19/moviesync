@@ -11,7 +11,15 @@ export function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-      <FormField id="login-email" label="Email" type="email" autoComplete="email" error={errors.email} {...register("email")} />
+      <FormField
+        id="login-username"
+        label="Username"
+        autoComplete="username"
+        autoCapitalize="none"
+        spellCheck={false}
+        error={errors.username}
+        {...register("username")}
+      />
       <FormField
         id="login-password"
         label="Password"

@@ -45,7 +45,7 @@ async function main() {
     const res = await fetch(base + "/auth/register", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: `${role}@sock.test`, password: "password123", fullName: role, role }),
+      body: JSON.stringify({ username: `${role} sock`, password: "password123", role }),
     });
     assert.equal(res.status, 201);
     return res.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");

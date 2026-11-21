@@ -1,11 +1,12 @@
+import { normalizeUsername } from "../validator/auth.validator.js";
 import { User } from "../models/user.model.js";
 import type { SystemRole } from "../../../constant/role.js";
 import { RefreshToken } from "../models/refreshToken.model.js";
 import type { DeviceInfo } from "../types/index.js";
 
 export class AuthRepository {
-  static async findUserByEmail(email: string) {
-    return User.findOne({ email: email.toLowerCase() });
+  static async findUserByUsername(username: string) {
+    return User.findOne({ username: normalizeUsername(username) });
   }
 
   static async findUserById(id: string) {
@@ -17,15 +18,14 @@ export class AuthRepository {
   }
 
   static async createUser(
-    email: string,
+    username: string,
     password: string,
-    fullName: string,
     role: SystemRole,
   ) {
-    return User.create({ email, password, fullName, role });
+    return User.create({ username: normalizeUsername(username), password, role });
   }
 
-  static async updateUser(id: string, data: { fullName?: string }) {
+  static async updateUser(id: string, data: { username?: string }) {
     return User.findByIdAndUpdate(id, data, { new: true });
   }
 

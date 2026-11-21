@@ -2,18 +2,17 @@ import { Schema, model } from "mongoose";
 import { SystemRoleName, type SystemRole } from "../../../constant/role.js";
 
 export interface IUser {
-  email: string;
+  username: string;
   password: string;
-  fullName: string | null;
   role: SystemRole;
   deletedAt: Date | null;
 }
 
 const userSchema = new Schema<IUser>(
   {
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    // the login name; stored normalised (see normalizeUsername), so unique is case-insensitive
+    username: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
-    fullName: { type: String, default: null },
     // unique: exactly one account per person (see PROJECT.md)
     role: { type: String, enum: Object.values(SystemRoleName), required: true, unique: true },
     deletedAt: { type: Date, default: null },

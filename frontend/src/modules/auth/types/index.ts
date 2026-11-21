@@ -4,8 +4,7 @@ export type Role = (typeof ROLES)[number];
 // mirrors AuthUser in backend/src/modules/auth/types
 export interface AuthUser {
   id: string;
-  email: string;
-  fullName: string | null;
+  username: string; // normalised: lowercase, single spaces
   role: Role;
 }
 

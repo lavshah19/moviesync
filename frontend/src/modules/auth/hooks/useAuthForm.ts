@@ -33,7 +33,7 @@ function useAuthForm<T extends FieldValues>(
 }
 
 export const useLoginForm = () =>
-  useAuthForm(loginSchema, authApi.login, { email: "", password: "" });
+  useAuthForm(loginSchema, authApi.login, { username: "", password: "" });
 
 export const useRegisterForm = () =>
-  useAuthForm(registerSchema, authApi.register, { email: "", password: "", fullName: "" });
+  useAuthForm(registerSchema, authApi.register, { username: "", password: "" });
