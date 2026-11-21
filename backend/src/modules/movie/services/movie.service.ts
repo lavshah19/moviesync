@@ -2,6 +2,8 @@ import createHttpError from "http-errors";
 import type { Types } from "mongoose";
 import { SYSTEM_ROLES, otherRole, type SystemRole } from "../../../constant/role.js";
 import { isDuplicateKeyError } from "../../../utils/mongo.js";
+import { broadcast } from "../../../socket/index.js";
+import { SOCKET_EVENTS } from "../../../socket/events.js";
 import { AuthRepository } from "../../auth/repository/auth.repository.js";
 import type { IMovie } from "../models/movie.model.js";
 import { MovieRepository } from "../repository/movie.repository.js";
@@ -31,8 +33,11 @@ export class MovieService {
     const role = await MovieService.getRole(userId);
     try {
       // the server picks the column: never trust the client with forRole
-      const movie = await MovieRepository.create({ ...text, forRole: otherRole(role), addedBy: userId });
-      return MovieService.toDTO(movie);
+      const movie = MovieService.toDTO(
+        await MovieRepository.create({ ...text, forRole: otherRole(role), addedBy: userId }),
+      );
+      broadcast(SOCKET_EVENTS.movieCreated, { movie });
+      return movie;
     } catch (err) {
       if (isDuplicateKeyError(err, "title")) throw new createHttpError.Conflict(ALREADY_IN_LIST);
       throw err;
@@ -62,14 +67,20 @@ export class MovieService {
         ? new createHttpError.Conflict(ALREADY_WATCHED)
         : new createHttpError.NotFound(NOT_FOUND);
     }
-    return MovieService.toDTO(updated);
+    const dto = MovieService.toDTO(updated);
+    broadcast(SOCKET_EVENTS.movieUpdated, { movie: dto });
+    return dto;
   }
 
   // Idempotent: ticking an already-watched movie returns it unchanged (keeps the first watchedAt).
   static async setWatched(userId: string, movieId: string, watched: boolean): Promise<MovieDTO> {
     const role = await MovieService.getRole(userId);
     const updated = await MovieRepository.setWatchedIfChanged(movieId, role, watched);
-    if (updated) return MovieService.toDTO(updated);
+    if (updated) {
+      const movie = MovieService.toDTO(updated);
+      broadcast(SOCKET_EVENTS.movieUpdated, { movie });
+      return movie;
+    }
 
     const movie = await MovieRepository.findById(movieId);
     if (!movie) throw new createHttpError.NotFound(NOT_FOUND);
@@ -78,7 +89,11 @@ export class MovieService {
   }
 
   static async remove(userId: string, movieId: string): Promise<void> {
-    if (await MovieRepository.deleteByRecommender(movieId, userId)) return;
+    const deleted = await MovieRepository.deleteByRecommender(movieId, userId);
+    if (deleted) {
+      broadcast(SOCKET_EVENTS.movieDeleted, { id: movieId, forRole: deleted.forRole });
+      return;
+    }
 
     const movie = await MovieRepository.findById(movieId);
     if (!movie) throw new createHttpError.NotFound(NOT_FOUND);

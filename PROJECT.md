@@ -87,12 +87,74 @@ Two columns side by side (stacked on mobile), one per person:
 
 - The server decides the column on POST (`forRole` = the other role); the client never sends it.
 
-## Updates
-- For now: the list loads on page load and reloads when the tab regains focus.
-- Later: realtime with sockets (the backend already has `/auth/socket-ticket`).
+## Updates (realtime)
+- Socket.IO on the backend's own port. The socket only **pushes**; every write still goes
+  through the HTTP API (one place for validation, permissions and errors).
+- Auth: the browser calls `GET /api/auth/socket-ticket` (cookie) for a 60-second ticket and
+  sends it in the handshake (`auth: { ticket }`). Tickets carry `purpose: "socket"`, so a
+  ticket can't be used as an access token or the other way round. Refused handshakes reply
+  `NO_TICKET`, `INVALID_TICKET` or `USER_NOT_FOUND`.
+- The browser connects to the backend **directly** (Vercel rewrites don't proxy WebSockets),
+  so the backend's `CORS_ORIGIN` must list the frontend origin.
+- Both people share one room (`board`). Events, sent after a successful write only:
+
+| Event           | Payload                         | When                          |
+|-----------------|---------------------------------|-------------------------------|
+| `movie:created` | `{ movie }`                     | a movie is suggested          |
+| `movie:updated` | `{ movie }`                     | edited, ticked or unticked    |
+| `movie:deleted` | `{ id, forRole }`               | removed                       |
+
+- The sender receives its own events too (its other tabs stay in sync); clients apply them
+  idempotently (upsert / remove by id).
+- Fallback: the list also reloads when the tab regains focus, so a missed event heals itself.
+- Code: `backend/src/socket/` (`index.ts` server + `broadcast`, `auth.ts` handshake,
+  `events.ts` the contract). Checked by `npm run test:e2e` (`scripts/socket.e2e.ts`).
+- Frontend: `frontend/src/modules/socket/` (`events.ts` mirrors the backend contract,
+  `api/` fetches the ticket, `hooks/useSocket.ts` owns the connection). `useMovies` applies
+  the events to the board. No connection indicator is shown: a "Live" dot read as "the other
+  person is online", which it isn't (see Future plans: presence). `useSocket` still returns
+  the status for when presence is built.
+  - Connects while the board is mounted (logged in), disconnects on logout.
+  - Fresh ticket on every connect; a refused handshake is retried after 5s.
+  - Refetches the list after every reconnect, and reconnects at once when the browser reports
+    it's back online (Socket.IO's own heartbeat can take ~45s to notice a dead connection).
+  - Env: `NEXT_PUBLIC_SOCKET_URL` = the backend URL (default `http://localhost:3002`). It is
+    baked in at build time, so set it on Vercel before building.
+
+## Long lists (decision: no pagination)
+- `GET /movies` returns every movie in one request. Two people add maybe a few hundred movies a
+  year (~100 KB of JSON), which loads in milliseconds.
+- On screen, each column scrolls inside its own ticket; on desktop the page itself never scrolls.
+- Cursor pagination / infinite scroll was considered and rejected for now. It would complicate:
+  - the counts ("8 to watch · 2 watched", the greeting line), which would need extra count queries;
+  - the two-part sort (unwatched by `createdAt`, then watched by `watchedAt`), where ticking a
+    movie moves it between parts and a cursor can skip or repeat items;
+  - the reload on tab focus, which would have to refetch every loaded page.
+- If a column gets long, step 1 is a frontend-only "Show watched (N)" fold (watched movies are
+  what piles up).
+- Step 2, only past roughly 1,000 movies per column: per-column fetches,
+  `GET /movies?forRole=…&cursor=<createdAt,_id>`, plus a small summary endpoint for the counts.
 
 ## Code layout
 - Backend: `backend/src/modules/movie/` with `models`, `validator`, `repository`, `services`,
   `controller`, `routes`, mounted in `backend/src/routes/index.ts`.
 - Frontend: `frontend/src/modules/movie/` with `api`, `components`, `hooks`, `schema`, `types`;
   the two columns render on `frontend/src/app/page.tsx` inside `AuthGuard`.
+
+## Future plans
+
+### Presence: "Dipika is here"
+Not built yet. A "Live" connection dot was tried and removed: it only meant *your own*
+connection was up, and both of us read it as "the other person is online".
+
+- Show the other person's status next to the greeting: "**Dipika is here**" (green dot) while
+  connected, "Dipika was here 2h ago" (grey) when not, from a `lastSeen` time.
+- Backend (`src/socket/`): count open sockets per user (two tabs = still one person). On the
+  first connect broadcast `presence:update { role, online: true }`; on the last disconnect
+  save `User.lastSeen` and broadcast `{ role, online: false, lastSeen }`. Send the current
+  state to a socket when it connects, so a fresh page doesn't start blank.
+- Frontend: a `presence` handler in `useSocket`, a small `Presence` component in
+  `modules/socket/components/`. If an own-connection hint is wanted too, word it so it
+  can't be mistaken for presence (e.g. only show "Reconnecting…" while offline).
+- Edge cases: a phone going to sleep disconnects after the ~45s heartbeat, so "online" can lag
+  that long; rapid reconnects shouldn't flicker (wait a few seconds before showing "offline").

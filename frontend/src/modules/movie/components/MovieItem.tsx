@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { Role } from "@/modules/auth/types";
+import { useSwipe } from "../hooks/useSwipe";
 import { movieLabel, type Movie } from "../types";
+import { MovieActionsMenu } from "./MovieActionsMenu";
 import { MovieForm } from "./MovieForm";
+import { WatchedPunch } from "./WatchedPunch";
 
 const sameYear = (d: Date) => d.getFullYear() === new Date().getFullYear();
 const formatDate = (iso: string) => {
@@ -29,6 +33,9 @@ interface Props {
   onRemove: (movie: Movie) => void;
 }
 
+// What a swipe does depends on who you are (PROJECT.md rules):
+//   owner        -> swipe right: watched / not watched
+//   recommender  -> swipe right: edit (until watched), swipe left: remove (asks first)
 export function MovieItem({
   movie,
   isOwner,
@@ -39,9 +46,23 @@ export function MovieItem({
   onRemove,
 }: Props) {
   const [editing, setEditing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const watched = !!movie.watchedAt;
+  const canEdit = isRecommender && !watched;
   const label = movieLabel(movie);
+  const owner = capitalize(ownerName);
   const checkboxId = `watched-${movie.id}`;
+
+  const rightAction = isOwner
+    ? { label: watched ? "Not watched" : "Watched", run: () => onToggleWatched(movie) }
+    : canEdit
+      ? { label: "Edit", run: () => setEditing(true) }
+      : undefined;
+  const leftAction = isRecommender
+    ? { label: "Remove", run: () => setConfirming(true) }
+    : undefined;
+
+  const swipe = useSwipe({ onSwipeRight: rightAction?.run, onSwipeLeft: leftAction?.run });
 
   if (editing) {
     return (
@@ -62,70 +83,84 @@ export function MovieItem({
   }
 
   return (
-    <li className="flex items-start gap-3 py-3">
-      <input
-        id={checkboxId}
-        type="checkbox"
-        checked={watched}
-        disabled={!isOwner}
-        onChange={() => onToggleWatched(movie)}
-        title={isOwner ? undefined : `Only ${capitalize(ownerName)} can tick this`}
-        className="mt-1 size-4 shrink-0 accent-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:accent-zinc-100"
-      />
-      <div className="min-w-0 flex-1">
-        <label
-          htmlFor={checkboxId}
-          className={`block break-words ${isOwner ? "cursor-pointer" : ""} ${watched ? "text-zinc-500 line-through" : ""}`}
-        >
-          <span className="font-medium">{movie.title}</span>{" "}
-          <span className="text-zinc-500">· {movie.year}</span>
-          <span className="sr-only">{watched ? " (watched)" : " (not watched)"}</span>
-        </label>
-        <p className="mt-0.5 text-xs text-zinc-500">
-          Suggested{" "}
-          <time dateTime={movie.createdAt} title={formatDateTime(movie.createdAt)}>
-            {formatDate(movie.createdAt)}
-          </time>
-          {movie.editedAt && (
-            <>
-              {" · "}
-              <span title={`Edited ${formatDateTime(movie.editedAt)}`}>edited</span>
-            </>
-          )}
-          {movie.watchedAt && (
-            <>
-              {" · "}Watched{" "}
-              <time dateTime={movie.watchedAt} title={formatDateTime(movie.watchedAt)}>
-                {formatDate(movie.watchedAt)}
-              </time>
-            </>
-          )}
-        </p>
-      </div>
-      {isRecommender && (
-        <div className="flex shrink-0 gap-1">
-          {!watched && (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              aria-label={`Edit ${label}`}
-              className="rounded px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-            >
-              Edit
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(`Remove "${label}" from ${capitalize(ownerName)}'s list?`))
-                onRemove(movie);
-            }}
-            aria-label={`Remove ${label}`}
-            className="rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
+    <li className="relative overflow-hidden">
+      {/* revealed under the row while swiping (touch only) */}
+      {swipe.dragging && (
+        <div aria-hidden className="absolute inset-0 flex text-sm font-medium text-white">
+          <div
+            className={`flex flex-1 items-center pl-4 transition-colors duration-150 ${swipe.dx > 0 && rightAction ? (swipe.passed ? "bg-rose-600" : "bg-rose-400") : "bg-transparent"}`}
           >
-            Remove
-          </button>
+            {swipe.dx > 0 && rightAction?.label}
+          </div>
+          <div
+            className={`flex flex-1 items-center justify-end pr-4 transition-colors duration-150 ${swipe.dx < 0 && leftAction ? (swipe.passed ? "bg-red-600" : "bg-red-400") : "bg-transparent"}`}
+          >
+            {swipe.dx < 0 && leftAction?.label}
+          </div>
         </div>
+      )}
+
+      <div
+        {...swipe.handlers}
+        style={{ transform: swipe.dx ? `translateX(${swipe.dx}px)` : undefined }}
+        className={`relative flex touch-pan-y items-start gap-3 bg-white py-3.5 dark:bg-zinc-900 ${swipe.dragging ? "select-none" : "transition-transform duration-200 ease-out"}`}
+      >
+        <WatchedPunch
+          id={checkboxId}
+          checked={watched}
+          readOnlyTitle={isOwner ? undefined : `Only ${owner} can tick this`}
+          onChange={() => onToggleWatched(movie)}
+        />
+        <div className="min-w-0 flex-1">
+          <label
+            htmlFor={checkboxId}
+            className={`block break-words ${isOwner ? "cursor-pointer" : ""} ${watched ? "text-zinc-400 line-through decoration-rose-400/70 dark:text-zinc-500" : ""}`}
+          >
+            <span className="font-medium">{movie.title}</span>{" "}
+            <span className="text-zinc-500 dark:text-zinc-400">· {movie.year}</span>
+          </label>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            Suggested{" "}
+            <time dateTime={movie.createdAt} title={formatDateTime(movie.createdAt)}>
+              {formatDate(movie.createdAt)}
+            </time>
+            {movie.editedAt && (
+              <>
+                {" · "}
+                <span title={`Edited ${formatDateTime(movie.editedAt)}`}>edited</span>
+              </>
+            )}
+            {movie.watchedAt && (
+              <span className="text-rose-600 dark:text-rose-400">
+                {" · "}Watched{" "}
+                <time dateTime={movie.watchedAt} title={formatDateTime(movie.watchedAt)}>
+                  {formatDate(movie.watchedAt)}
+                </time>
+              </span>
+            )}
+          </p>
+        </div>
+        {isRecommender && (
+          <MovieActionsMenu
+            label={label}
+            canEdit={canEdit}
+            onEdit={() => setEditing(true)}
+            onRemove={() => setConfirming(true)}
+          />
+        )}
+      </div>
+
+      {confirming && (
+        <ConfirmDialog
+          open
+          title="Remove this pick?"
+          description={`"${label}" will be taken off ${owner}'s list.`}
+          confirmLabel="Remove"
+          cancelLabel="Keep it"
+          danger
+          onConfirm={() => onRemove(movie)}
+          onClose={() => setConfirming(false)}
+        />
       )}
     </li>
   );

@@ -24,12 +24,12 @@ export function RegisterForm() {
       />
 
       <fieldset className="flex flex-col gap-2" aria-describedby={errors.role ? "reg-role-error" : undefined}>
-        <legend className="text-sm font-medium">Who are you?</legend>
+        <legend className="text-sm font-medium">Which seat is yours?</legend>
         <div className="flex gap-3">
           {ROLES.map((role) => (
             <label
               key={role}
-              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border border-zinc-300 px-3 py-2 capitalize has-checked:border-zinc-900 has-checked:bg-zinc-100 dark:border-zinc-700 dark:has-checked:border-zinc-100 dark:has-checked:bg-zinc-800"
+              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-zinc-300 px-3 py-2.5 font-medium capitalize transition duration-150 hover:-translate-y-px hover:border-rose-300 has-checked:border-rose-600 has-checked:bg-rose-50 has-checked:text-rose-700 has-focus-visible:ring-2 has-focus-visible:ring-rose-500/40 dark:border-zinc-700 dark:hover:border-rose-800 dark:has-checked:border-rose-400 dark:has-checked:bg-rose-950/40 dark:has-checked:text-rose-200"
             >
               <input type="radio" value={role} className="sr-only" {...register("role")} />
               {role}
@@ -44,7 +44,9 @@ export function RegisterForm() {
       </fieldset>
 
       {errors.root && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{errors.root.message}</p>}
-      <SubmitButton pending={isSubmitting}>Create account</SubmitButton>
+      <SubmitButton pending={isSubmitting} pendingLabel="Booking your seat…">
+        Book my seat
+      </SubmitButton>
     </form>
   );
 }

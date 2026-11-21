@@ -13,7 +13,7 @@ export function LogoutButton() {
         await logout();
         router.replace("/auth");
       }}
-      className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700"
+      className="h-9 rounded-md border border-zinc-300 px-3 text-sm font-medium transition duration-150 hover:-translate-y-px hover:border-rose-300 hover:text-rose-700 active:translate-y-0 active:scale-[0.98] dark:border-zinc-700 dark:hover:border-rose-800 dark:hover:text-rose-300"
     >
       Log out
     </button>

@@ -12,10 +12,21 @@ export const generateAccessToken = (payload: {
 }) => {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "15m" }); // for testing 15m later will be 1h
 };
-export const generateSocketTicket = (payload: {   // will be used to authenticate socket connection not need currently 
-  id: string;
-}) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "60s" });
+// Short-lived ticket for the socket handshake. The browser can't send the httpOnly cookie to
+// the socket server (another origin in production), so it trades the cookie for this over HTTP.
+// `purpose` keeps tickets and access tokens from standing in for each other (same secret).
+const SOCKET_PURPOSE = "socket";
+
+export const generateSocketTicket = (payload: { id: string }) => {
+  return jwt.sign({ ...payload, purpose: SOCKET_PURPOSE }, JWT_SECRET, { expiresIn: "60s" });
+};
+
+export const verifySocketTicket = (ticket: string): IJwtPayload => {
+  const decoded = jwt.verify(ticket, JWT_SECRET);
+  if (typeof decoded !== "object" || !("id" in decoded) || decoded.purpose !== SOCKET_PURPOSE) {
+    throw createHttpError.Unauthorized("Invalid socket ticket");
+  }
+  return decoded as IJwtPayload;
 };
 
 // unique jti: two tokens for the same user in the same second (register→login, double-click,
@@ -27,9 +38,8 @@ export const generateRefreshToken = (payload: { id: string }) => {
 export const verifyAccessToken = (token: string): IJwtPayload => {
   const decoded = jwt.verify(token, JWT_SECRET);
 
-  if (
-    typeof decoded !== "object" ||
-    !("id" in decoded) ) {
+  // a socket ticket is signed with the same secret: never accept it as an access token
+  if (typeof decoded !== "object" || !("id" in decoded) || "purpose" in decoded) {
     throw createHttpError.Unauthorized("Invalid token payload");
   }
 
