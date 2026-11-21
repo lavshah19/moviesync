@@ -1,0 +1,31 @@
+import "dotenv/config";
+import { z } from "zod";
+
+const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  PORT: z.coerce.number().int().positive().default(3000),
+  LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
+  // comma-separated list of allowed origins; empty = CORS disabled
+  CORS_ORIGIN: z
+    .string()
+    .default("")
+    .transform((s) =>
+      s
+        .split(",")
+        .map((o) => o.trim())
+        .filter(Boolean),
+    ),
+  JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
+  JWT_REFRESH_SECRET: z.string().min(1, "JWT_REFRESH_SECRET is required"),
+  MONGODB_URI: z.string().min(1, "MONGODB_URI is required"),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  // eslint-disable-next-line no-console -- logger depends on env, so it can't be used here
+  console.error("Invalid environment variables:\n" + z.prettifyError(parsed.error));
+  process.exit(1);
+}
+
+export const env = parsed.data;
