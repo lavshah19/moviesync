@@ -65,13 +65,13 @@ export function MovieForm({
           aria-invalid={!!errors.movie}
           aria-describedby={errors.movie ? errorId : undefined}
           onKeyDown={(e) => e.key === "Escape" && onCancel?.()}
-          className="min-w-0 flex-1 rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-zinc-900 aria-invalid:border-red-500 dark:border-zinc-700 dark:focus:border-zinc-100"
+          className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 py-2.5 text-sm outline-none transition-colors duration-150 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 aria-invalid:border-red-500 dark:border-zinc-700 dark:focus:border-rose-400"
           {...register("movie")}
         />
         <button
           type="submit"
           disabled={isSubmitting}
-          className="shrink-0 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="shrink-0 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition duration-150 ease-out hover:-translate-y-px hover:bg-rose-700 active:translate-y-0 active:scale-[0.98] disabled:translate-y-0 disabled:opacity-60"
         >
           {isSubmitting ? "Saving…" : submitLabel}
         </button>
@@ -79,7 +79,7 @@ export function MovieForm({
           <button
             type="button"
             onClick={onCancel}
-            className="shrink-0 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+            className="shrink-0 rounded-lg border border-zinc-300 px-3 py-2.5 text-sm font-medium transition duration-150 hover:border-rose-300 active:scale-[0.98] dark:border-zinc-700 dark:hover:border-rose-800"
           >
             Cancel
           </button>

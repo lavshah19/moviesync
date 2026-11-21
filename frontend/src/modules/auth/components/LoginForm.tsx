@@ -21,7 +21,9 @@ export function LoginForm() {
         {...register("password")}
       />
       {errors.root && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{errors.root.message}</p>}
-      <SubmitButton pending={isSubmitting}>Log in</SubmitButton>
+      <SubmitButton pending={isSubmitting} pendingLabel="Finding your seat…">
+        Take my seat
+      </SubmitButton>
     </form>
   );
 }

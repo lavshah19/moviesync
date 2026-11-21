@@ -62,7 +62,7 @@ export function MovieItem({
   }
 
   return (
-    <li className="flex items-start gap-3 py-3">
+    <li className="flex items-start gap-3 py-3.5">
       <input
         id={checkboxId}
         type="checkbox"
@@ -70,15 +70,15 @@ export function MovieItem({
         disabled={!isOwner}
         onChange={() => onToggleWatched(movie)}
         title={isOwner ? undefined : `Only ${capitalize(ownerName)} can tick this`}
-        className="mt-1 size-4 shrink-0 accent-zinc-900 disabled:cursor-not-allowed disabled:opacity-60 dark:accent-zinc-100"
+        className="mt-1 size-[18px] shrink-0 cursor-pointer accent-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:accent-rose-500"
       />
       <div className="min-w-0 flex-1">
         <label
           htmlFor={checkboxId}
-          className={`block break-words ${isOwner ? "cursor-pointer" : ""} ${watched ? "text-zinc-500 line-through" : ""}`}
+          className={`block break-words ${isOwner ? "cursor-pointer" : ""} ${watched ? "text-zinc-400 line-through decoration-rose-400/70 dark:text-zinc-500" : ""}`}
         >
           <span className="font-medium">{movie.title}</span>{" "}
-          <span className="text-zinc-500">· {movie.year}</span>
+          <span className="text-zinc-500 dark:text-zinc-400">· {movie.year}</span>
           <span className="sr-only">{watched ? " (watched)" : " (not watched)"}</span>
         </label>
         <p className="mt-0.5 text-xs text-zinc-500">
@@ -109,7 +109,7 @@ export function MovieItem({
               type="button"
               onClick={() => setEditing(true)}
               aria-label={`Edit ${label}`}
-              className="rounded px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              className="rounded-md px-2 py-1 text-xs font-medium text-zinc-600 transition duration-150 hover:bg-rose-50 hover:text-rose-700 active:scale-[0.97] dark:text-zinc-400 dark:hover:bg-rose-950/50 dark:hover:text-rose-300"
             >
               Edit
             </button>
@@ -121,7 +121,7 @@ export function MovieItem({
                 onRemove(movie);
             }}
             aria-label={`Remove ${label}`}
-            className="rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
+            className="rounded-md px-2 py-1 text-xs font-medium text-red-600 transition duration-150 hover:bg-red-50 active:scale-[0.97] dark:text-red-400 dark:hover:bg-red-950/50"
           >
             Remove
           </button>

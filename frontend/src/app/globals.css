@@ -3,6 +3,12 @@
 /* dark: utilities follow <html data-theme="dark"> (set by THEME_SCRIPT / the toggle), not the OS */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* Geist (body) and Instrument Serif (display) come from next/font in layout.tsx */
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-instrument-serif), Georgia, serif;
+}
+
 /* native controls (checkboxes, inputs, scrollbars) match the chosen theme */
 :root {
   color-scheme: light dark; /* before the script runs / if it can't */
@@ -16,4 +22,21 @@
 
 body {
   @apply bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100;
+}
+
+/* Entrance on load, once. Stagger with style={{ "--d": "120ms" }}. Off under reduced motion. */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.enter {
+  animation: enter 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .enter {
+    animation: none;
+  }
 }

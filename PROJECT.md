@@ -91,6 +91,20 @@ Two columns side by side (stacked on mobile), one per person:
 - For now: the list loads on page load and reloads when the tab regains focus.
 - Later: realtime with sockets (the backend already has `/auth/socket-ticket`).
 
+## Long lists (decision: no pagination)
+- `GET /movies` returns every movie in one request. Two people add maybe a few hundred movies a
+  year (~100 KB of JSON), which loads in milliseconds.
+- On screen, each column scrolls inside its own ticket; on desktop the page itself never scrolls.
+- Cursor pagination / infinite scroll was considered and rejected for now. It would complicate:
+  - the counts ("8 to watch · 2 watched", the greeting line), which would need extra count queries;
+  - the two-part sort (unwatched by `createdAt`, then watched by `watchedAt`), where ticking a
+    movie moves it between parts and a cursor can skip or repeat items;
+  - the reload on tab focus, which would have to refetch every loaded page.
+- If a column gets long, step 1 is a frontend-only "Show watched (N)" fold (watched movies are
+  what piles up).
+- Step 2, only past roughly 1,000 movies per column: per-column fetches,
+  `GET /movies?forRole=…&cursor=<createdAt,_id>`, plus a small summary endpoint for the counts.
+
 ## Code layout
 - Backend: `backend/src/modules/movie/` with `models`, `validator`, `repository`, `services`,
   `controller`, `routes`, mounted in `backend/src/routes/index.ts`.
