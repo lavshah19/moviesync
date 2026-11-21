@@ -7,6 +7,8 @@ import axios from "axios";
 import type { z } from "zod";
 import { authApi } from "../api/auth.api";
 import { loginSchema, registerSchema } from "../schema/auth.schema";
+import { useAuthStore } from "../store/auth.store";
+import type { AuthUser } from "../types";
 
 // backend errors look like { error: "Email is already registered." }
 const errorMessage = (err: unknown) =>
@@ -14,15 +16,16 @@ const errorMessage = (err: unknown) =>
 
 function useAuthForm<T extends FieldValues>(
   schema: z.ZodType<T, T>,
-  submit: (values: T) => Promise<unknown>,
+  submit: (values: T) => Promise<AuthUser>,
   defaultValues: DefaultValues<T>,
 ) {
   const router = useRouter();
+  const setUser = useAuthStore((s) => s.setUser);
   const form = useForm<T>({ resolver: zodResolver(schema), defaultValues });
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
-      await submit(values);
+      setUser(await submit(values));
       router.push("/");
     } catch (err) {
       form.setError("root", { message: errorMessage(err) });

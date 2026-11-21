@@ -1,4 +1,5 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
 
 // Same-origin "/api" is proxied to the backend by the rewrite in next.config.ts, so the
 // httpOnly auth cookies are first-party and the browser attaches them automatically:
@@ -18,6 +19,12 @@ export const refreshSession = (): Promise<void> => {
   refreshPromise ??= axios
     .post("/api/auth/refresh-token", {}, { withCredentials: true })
     .then(() => undefined)
+    .catch((err) => {
+      // server rejected the session -> logged out; a network blip or 5xx keeps the user
+      const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+      if (status && status < 500) useAuthStore.getState().clear();
+      throw err;
+    })
     .finally(() => {
       refreshPromise = null;
     });
