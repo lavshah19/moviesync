@@ -3,16 +3,13 @@
 import { useForm, type DefaultValues, type FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 import type { z } from "zod";
+import { apiErrorMessage } from "@/lib/apiError";
 import { authApi } from "../api/auth.api";
 import { loginSchema, registerSchema } from "../schema/auth.schema";
 import { useAuthStore } from "../store/auth.store";
 import type { AuthUser } from "../types";
 
-// backend errors look like { error: "Email is already registered." }
-const errorMessage = (err: unknown) =>
-  (axios.isAxiosError(err) && err.response?.data?.error) || "Something went wrong, try again.";
 
 function useAuthForm<T extends FieldValues>(
   schema: z.ZodType<T, T>,
@@ -28,7 +25,7 @@ function useAuthForm<T extends FieldValues>(
       setUser(await submit(values));
       router.push("/");
     } catch (err) {
-      form.setError("root", { message: errorMessage(err) });
+      form.setError("root", { message: apiErrorMessage(err) });
     }
   });
 

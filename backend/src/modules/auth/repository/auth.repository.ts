@@ -12,6 +12,10 @@ export class AuthRepository {
     return User.findById(id);
   }
 
+  static async findUserByRole(role: SystemRole) {
+    return User.exists({ role });
+  }
+
   static async createUser(
     email: string,
     password: string,

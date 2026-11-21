@@ -14,7 +14,8 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     fullName: { type: String, default: null },
-    role: { type: String, enum: Object.values(SystemRoleName), required: true },
+    // unique: exactly one account per person (see PROJECT.md)
+    role: { type: String, enum: Object.values(SystemRoleName), required: true, unique: true },
     deletedAt: { type: Date, default: null },
   },
   { timestamps: true },

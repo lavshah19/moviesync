@@ -11,6 +11,7 @@ import type { AuthUser, DeviceInfo, IAuthResponse } from "../types/index.js";
 import type { UpdateProfileInput } from "../validator/auth.validator.js";
 import { AuthRepository } from "../repository/auth.repository.js";
 import type { SystemRole } from "../../../constant/role.js";
+import { isDuplicateKeyError } from "../../../utils/mongo.js";
 
 export class AuthService {
   static async login(email: string, password: string, deviceInfo?: DeviceInfo) {
@@ -34,13 +35,28 @@ export class AuthService {
     roleName: SystemRole,
     deviceInfo?: DeviceInfo,
   ) {
-    const existing = await AuthRepository.findUserByEmail(email);
-    if (existing) {
-      throw new createHttpError.Conflict("Email is already registered.");
-    }
+    // friendly early answers; the unique indexes below are what actually guarantee them
+    const [emailTaken, roleTaken] = await Promise.all([
+      AuthRepository.findUserByEmail(email),
+      AuthRepository.findUserByRole(roleName),
+    ]);
+    if (emailTaken) throw new createHttpError.Conflict("Email is already registered.");
+    if (roleTaken) throw new createHttpError.Conflict("This role is already taken.");
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await AuthRepository.createUser(email, hashedPassword, fullName, roleName);
+    let user;
+    try {
+      user = await AuthRepository.createUser(email, hashedPassword, fullName, roleName);
+    } catch (err) {
+      // two sign-ups racing past the checks above
+      if (isDuplicateKeyError(err, "role")) {
+        throw new createHttpError.Conflict("This role is already taken.");
+      }
+      if (isDuplicateKeyError(err, "email")) {
+        throw new createHttpError.Conflict("Email is already registered.");
+      }
+      throw err;
+    }
 
     return AuthService.createTokenResponse(user, deviceInfo);
   }

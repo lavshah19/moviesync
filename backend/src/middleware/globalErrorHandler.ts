@@ -18,5 +18,7 @@ export const globalErrorHandler: ErrorRequestHandler = (err: unknown, _req, res,
   // http-errors sets expose=true for 4xx only, so 5xx internals never leak
   res.status(httpErr.status).json({
     error: httpErr.expose ? httpErr.message : "Internal Server Error",
+    // field-level validation issues (validate.ts) so the client can show them per input
+    ...(httpErr.expose && httpErr.details ? { details: httpErr.details as unknown } : {}),
   });
 };

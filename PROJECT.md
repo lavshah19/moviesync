@@ -41,7 +41,9 @@ Two columns side by side (stacked on mobile), one per person:
   saved as `Titanic - 1997`.
 - Names may contain dashes: `Spider-Man - 2002` parses as name `Spider-Man`, year `2002`
   (the last ` - YYYY` is the year).
-- Regex: `^(.+?)\s*-\s*(\d{4})$`, then the name is trimmed and must be non-empty.
+- En/em dashes (`–`, `—`) are accepted too: phone keyboards auto-replace `-`.
+- Regex: `^(.+?)\s*[-–—]\s*(\d{4})$`, then the name is trimmed, inner spaces collapsed, and it
+  must contain a letter or digit (max 200 characters).
 - Year range: 1888 to next year.
 - Same validation on the frontend (zod, instant feedback) and the backend (zod, the real check).
 - Applies to both adding and editing.
@@ -59,6 +61,7 @@ Two columns side by side (stacked on mobile), one per person:
   changed by an edit, so the original suggestion date is kept.
 - `watchedAt`: when it was ticked. Unticking sets it back to `null`.
   `watched` is simply `watchedAt !== null`.
+- Ticking an already-watched movie changes nothing (the first `watchedAt` is kept).
 
 ## Data model: `Movie`
 
