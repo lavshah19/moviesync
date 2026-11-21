@@ -27,7 +27,8 @@ export function MovieBoard() {
 
   if (!user) return null;
 
-  const firstName = (user.fullName ?? capitalize(user.role)).split(" ")[0];
+  // "jyotsan hamal" -> "Jyotsan" (the h1 capitalises)
+  const firstName = user.username.split(" ")[0];
   const other = ROLES.find((r) => r !== user.role) ?? user.role;
   const otherName = capitalize(other);
 

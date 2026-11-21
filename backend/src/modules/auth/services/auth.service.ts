@@ -13,9 +13,11 @@ import { AuthRepository } from "../repository/auth.repository.js";
 import type { SystemRole } from "../../../constant/role.js";
 import { isDuplicateKeyError } from "../../../utils/mongo.js";
 
+const USERNAME_TAKEN = "That username is already taken.";
+
 export class AuthService {
-  static async login(email: string, password: string, deviceInfo?: DeviceInfo) {
-    const user = await AuthRepository.findUserByEmail(email);
+  static async login(username: string, password: string, deviceInfo?: DeviceInfo) {
+    const user = await AuthRepository.findUserByUsername(username);
     if (!user) {
       throw new createHttpError.Unauthorized("Invalid credentials.");
     }
@@ -29,31 +31,30 @@ export class AuthService {
   }
 
   static async register(
-    email: string,
+    username: string,
     password: string,
-    fullName: string,
     roleName: SystemRole,
     deviceInfo?: DeviceInfo,
   ) {
     // friendly early answers; the unique indexes below are what actually guarantee them
-    const [emailTaken, roleTaken] = await Promise.all([
-      AuthRepository.findUserByEmail(email),
+    const [usernameTaken, roleTaken] = await Promise.all([
+      AuthRepository.findUserByUsername(username),
       AuthRepository.findUserByRole(roleName),
     ]);
-    if (emailTaken) throw new createHttpError.Conflict("Email is already registered.");
+    if (usernameTaken) throw new createHttpError.Conflict(USERNAME_TAKEN);
     if (roleTaken) throw new createHttpError.Conflict("This role is already taken.");
 
     const hashedPassword = await bcrypt.hash(password, 10);
     let user;
     try {
-      user = await AuthRepository.createUser(email, hashedPassword, fullName, roleName);
+      user = await AuthRepository.createUser(username, hashedPassword, roleName);
     } catch (err) {
       // two sign-ups racing past the checks above
       if (isDuplicateKeyError(err, "role")) {
         throw new createHttpError.Conflict("This role is already taken.");
       }
-      if (isDuplicateKeyError(err, "email")) {
-        throw new createHttpError.Conflict("Email is already registered.");
+      if (isDuplicateKeyError(err, "username")) {
+        throw new createHttpError.Conflict(USERNAME_TAKEN);
       }
       throw err;
     }
@@ -79,14 +80,19 @@ export class AuthService {
   static toAuthUser(user: AuthUser): AuthUser {
     return {
       id: user.id,
-      email: user.email,
-      fullName: user.fullName,
+      username: user.username,
       role: user.role,
     };
   }
 
   static async updateProfile(userId: string, input: UpdateProfileInput) {
-    const user = await AuthRepository.updateUser(userId, input);
+    let user;
+    try {
+      user = await AuthRepository.updateUser(userId, input);
+    } catch (err) {
+      if (isDuplicateKeyError(err, "username")) throw new createHttpError.Conflict(USERNAME_TAKEN);
+      throw err;
+    }
     if (!user) throw new createHttpError.NotFound("User not found.");
     return AuthService.toAuthUser(user);
   }

@@ -4,6 +4,10 @@ A private app for two people to recommend movies to each other.
 
 ## Users
 - Exactly two accounts, one per role: `jyotsan` and `dipika`.
+- Accounts have a **username** and a password (no email). Usernames are people's names:
+  letters, numbers, spaces and `. _ -`, 2–30 characters. They're stored normalised (trimmed,
+  single spaces, lowercase), so they're unique ignoring case and logging in as
+  "Jyotsan  HAMAL" finds "jyotsan hamal". Taken: `409 That username is already taken.`
 - The role is picked at registration. Once a role is taken, registering with it again is
   rejected (`409 This role is already taken`). Enforced by a unique index on `User.role`.
 

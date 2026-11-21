@@ -10,8 +10,7 @@ export type DeviceInfo = {
 
 export interface AuthUser {
   id: string;
-  email: string;
-  fullName: string | null;
+  username: string;
   role: SystemRole;
 }
 

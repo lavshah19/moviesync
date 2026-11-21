@@ -12,8 +12,16 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-      <FormField id="reg-name" label="Full name" autoComplete="name" error={errors.fullName} {...register("fullName")} />
-      <FormField id="reg-email" label="Email" type="email" autoComplete="email" error={errors.email} {...register("email")} />
+      <FormField
+        id="reg-username"
+        label="Username"
+        autoComplete="username"
+        autoCapitalize="none"
+        spellCheck={false}
+        placeholder="e.g. your name"
+        error={errors.username}
+        {...register("username")}
+      />
       <FormField
         id="reg-password"
         label="Password"

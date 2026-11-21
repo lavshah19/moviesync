@@ -30,9 +30,9 @@ const clearAuthCookies = (req: Request, res: Response) => {
 // plain object of arrow functions: safe to pass to the router unbound
 export const AuthController = {
   login: async (req: Request, res: Response) => {
-    const { email, password } = req.body as LoginInput;
+    const { username, password } = req.body as LoginInput;
     const deviceInfo = AuthService.getDeviceInfo(req.headers["user-agent"], req.ip);
-    const result = await AuthService.login(email, password, deviceInfo);
+    const result = await AuthService.login(username, password, deviceInfo);
     setAuthCookies(req, res, result);
 
     res.status(StatusCodes.OK).json({
@@ -43,9 +43,9 @@ export const AuthController = {
   },
 
   register: async (req: Request, res: Response) => {
-    const { email, password, fullName, role } = req.body as RegisterInput;
+    const { username, password, role } = req.body as RegisterInput;
     const deviceInfo = AuthService.getDeviceInfo(req.headers["user-agent"], req.ip);
-    const result = await AuthService.register(email, password, fullName, role, deviceInfo);
+    const result = await AuthService.register(username, password, role, deviceInfo);
     setAuthCookies(req, res, result);
 
     res.status(StatusCodes.CREATED).json({

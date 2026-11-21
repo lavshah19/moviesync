@@ -43,7 +43,7 @@ async function main() {
     const res = await fetch(base + "/auth/register", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: `${role}@e2e.test`, password: "password123", fullName: role, role }),
+      body: JSON.stringify({ username: `${role} test`, password: "password123", role }),
     });
     assert.equal(res.status, 201, `register ${role}`);
     return res.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
@@ -64,12 +64,45 @@ async function main() {
     console.log("accounts");
     await check("a role can only be registered once", async () => {
       const r = await call("POST", "/auth/register", "", {
-        email: "third@e2e.test", password: "password123", fullName: "x", role: "dipika",
+        username: "someone else", password: "password123", role: "dipika",
       });
       assert.equal(r.status, 409);
       assert.equal(r.body.error, "This role is already taken.");
     });
-    await check("movie routes need login", async () => {
+    await check("usernames are unique, ignoring case and extra spaces", async () => {
+    const r = await call("POST", "/auth/register", "", {
+      username: "  JYOTSAN   Test ", password: "password123", role: "dipika",
+    });
+    assert.equal(r.status, 409);
+    assert.equal(r.body.error, "That username is already taken.");
+  });
+  await check("login is case-insensitive and returns the username", async () => {
+    const r = await call("POST", "/auth/login", "", { username: "Dipika TEST", password: "password123" });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.data.user.username, "dipika test");
+    assert.equal(r.body.data.user.email, undefined);
+    assert.equal(r.body.data.user.fullName, undefined);
+  });
+  await check("wrong password and unknown user give the same answer", async () => {
+    const a = await call("POST", "/auth/login", "", { username: "dipika test", password: "wrongpass1" });
+    const b = await call("POST", "/auth/login", "", { username: "nobody here", password: "password123" });
+    assert.equal(a.status, 401);
+    assert.deepEqual(a.body, b.body);
+  });
+  await check("bad usernames are 422", async () => {
+    for (const bad of ["", " ", "a", "x".repeat(31), "bad<name>", "!!!", "...", 42]) {
+      const r = await call("POST", "/auth/register", "", { username: bad, password: "password123", role: "dipika" });
+      assert.equal(r.status, 422, `should reject ${JSON.stringify(bad)}`);
+    }
+  });
+  await check("username can be changed, but not to a taken one", async () => {
+    assert.equal((await call("PATCH", "/auth/me", she, { username: "JYOTSAN test" })).status, 409);
+    const r = await call("PATCH", "/auth/me", she, { username: "Dipika Renamed" });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.data.user.username, "dipika renamed");
+    assert.equal((await call("PATCH", "/auth/me", she, { username: "dipika test" })).status, 200);
+  });
+  await check("movie routes need login", async () => {
       assert.equal((await call("GET", "/movies")).status, 401);
     });
 
