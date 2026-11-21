@@ -1,0 +1,31 @@
+# Render Blueprint for the backend (Render → New → Blueprint → pick this repo).
+# The frontend is on Vercel (root directory: frontend), see PROJECT.md "Deploy".
+services:
+  - type: web
+    name: moviesync-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    region: singapore # pick the region closest to your Atlas cluster
+    # devDependencies (typescript) are needed to build; the app itself runs plain node on dist/
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: info
+      # fresh random secrets for production (never reuse the dev ones)
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      # asked for in the dashboard on first deploy (sync: false = never stored in the repo)
+      - key: MONGODB_URI # Atlas URI including /moviesync
+        sync: false
+      - key: CORS_ORIGIN # the Vercel URL, e.g. https://moviesync.vercel.app (no trailing slash)
+        sync: false
