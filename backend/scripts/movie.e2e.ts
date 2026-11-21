@@ -9,7 +9,7 @@ import type { AddressInfo } from "node:net";
 
 process.env.LOG_LEVEL = "silent"; // before the app (and its logger) is imported
 
-type Res = { status: number; body: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
+type Res = { status: number; body: any };
 
 async function main() {
 

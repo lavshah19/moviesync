@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Logo } from "@/components/Logo";
 import { AuthGuard } from "@/modules/auth/components/Guards";
 import { LogoutButton } from "@/modules/auth/components/LogoutButton";
 import { MovieBoard } from "@/modules/movie/components/MovieBoard";
@@ -9,7 +11,9 @@ export default function Home() {
       {/* md+: the page is exactly one screen tall and each column scrolls inside itself */}
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 sm:px-8 md:h-dvh md:flex-none">
         <header className="flex items-center justify-between py-5">
-          <p className="font-medium text-rose-700 dark:text-rose-300">moviesync</p>
+          <Link href="/" className="rounded-md transition-opacity duration-150 hover:opacity-80">
+            <Logo height={40} />
+          </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <LogoutButton />

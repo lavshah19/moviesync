@@ -2,6 +2,7 @@ import { env } from "./config/env";
 import { logger } from "./config/logger";
 import { connectDB, disconnectDB } from "./config/db";
 import app from "./app";
+import { closeSocket, initSocket } from "./socket/index.js";
 import type { Server } from "node:http";
 
 let server: Server | undefined;
@@ -11,6 +12,7 @@ connectDB()
     server = app.listen(env.PORT, () => {
       logger.info(`Server listening on port ${env.PORT}`);
     });
+    initSocket(server); // same port: Socket.IO handles the /socket.io/ path on this server
   })
   .catch((err) => {
     logger.fatal({ err }, "Failed to connect to MongoDB");
@@ -26,7 +28,8 @@ function shutdown(signal: string, code = 0) {
       // flush buffered logs before exiting
       .finally(() => logger.flush(() => process.exit(err ? 1 : code)));
   };
-  if (server) server.close(exit);
+  // closeSocket disconnects every socket and then closes the HTTP server itself
+  if (server) void closeSocket().then(() => exit());
   else exit();
   // force exit if connections don't drain
   setTimeout(() => process.exit(1), 10_000).unref();

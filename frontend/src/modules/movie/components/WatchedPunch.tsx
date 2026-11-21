@@ -13,7 +13,10 @@ export function WatchedPunch({
   onChange: () => void;
 }) {
   return (
-    <span title={readOnlyTitle} className="relative mt-0.5 flex size-6 shrink-0 items-center justify-center">
+    <span
+      title={readOnlyTitle}
+      className="relative mt-0.5 flex size-6 shrink-0 items-center justify-center"
+    >
       <input
         id={id}
         type="checkbox"

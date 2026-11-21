@@ -12,7 +12,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:e2e": "tsx scripts/movie.e2e.ts"
+    "test:e2e": "tsx scripts/movie.e2e.ts && tsx scripts/socket.e2e.ts"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +29,7 @@
     "mongoose": "^9.12.3",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
+    "socket.io": "^4.8.4",
     "ua-parser-js": "^2.0.10",
     "zod": "^4.6.7"
   },
@@ -45,6 +46,7 @@
     "globals": "^17.14.0",
     "pino-pretty": "^13.2.0",
     "prettier": "^3.9.10",
+    "socket.io-client": "^4.8.4",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1"

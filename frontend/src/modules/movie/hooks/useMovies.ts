@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiErrorMessage, apiErrorStatus } from "@/lib/apiError";
 import { movieApi } from "../api/movie.api";
+import { useSocket } from "@/modules/socket/hooks/useSocket";
+import { SOCKET_EVENTS } from "@/modules/socket/events";
 import type { Movie, MovieColumns } from "../types";
 
 // Replace (or insert) one movie in its column, keeping the rest untouched.
@@ -15,7 +17,7 @@ const upsert = (columns: MovieColumns, movie: Movie): MovieColumns => {
   };
 };
 
-const without = (columns: MovieColumns, movie: Movie): MovieColumns => ({
+const without = (columns: MovieColumns, movie: Pick<Movie, "id" | "forRole">): MovieColumns => ({
   ...columns,
   [movie.forRole]: columns[movie.forRole].filter((m) => m.id !== movie.id),
 });
@@ -23,7 +25,9 @@ const without = (columns: MovieColumns, movie: Movie): MovieColumns => ({
 /**
  * Both columns plus every action on them. The server's reply is the source of truth: each
  * action swaps in the movie it returns. Ticking is optimistic so the checkbox feels instant.
- * ponytail: reloads on page load and when the tab becomes visible; sockets later (PROJECT.md).
+ * Live: socket events apply the other person's changes as they happen (idempotent upsert /
+ * remove by id, so our own echoed events are harmless). A reconnect refetches what was missed,
+ * and so does the tab becoming visible again.
  */
 export function useMovies() {
   const [columns, setColumns] = useState<MovieColumns | null>(null);
@@ -115,6 +119,16 @@ export function useMovies() {
       setActionError(apiErrorMessage(err));
     }
   }, []);
+
+  // no status shown in the UI (it read as "the other person is online"; see PROJECT.md)
+  useSocket({
+    handlers: {
+      [SOCKET_EVENTS.movieCreated]: ({ movie }) => setColumns((c) => c && upsert(c, movie)),
+      [SOCKET_EVENTS.movieUpdated]: ({ movie }) => setColumns((c) => c && upsert(c, movie)),
+      [SOCKET_EVENTS.movieDeleted]: (gone) => setColumns((c) => c && without(c, gone)),
+    },
+    onReconnect: () => void reload(),
+  });
 
   return {
     columns,

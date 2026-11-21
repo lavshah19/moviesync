@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/modules/theme/components/ThemeToggle";
 import { LoginForm } from "./LoginForm";
 import { RegisterForm } from "./RegisterForm";
@@ -21,7 +22,8 @@ export function AuthView() {
         className={`flex flex-col justify-center gap-10 px-6 py-12 sm:px-12 lg:px-16 lg:py-16 ${AUTH_PANEL_BG}`}
       >
         <div className="max-w-md">
-          <p className="enter text-sm font-medium text-rose-700 dark:text-rose-300">moviesync</p>
+          {/* desktop: the logo heads the story panel (on phones it sits above the form instead) */}
+          <Logo height={48} className="enter hidden lg:inline-flex" />
           <h1
             className="enter mt-3 font-display text-5xl leading-[1.05] tracking-tight text-balance sm:text-6xl xl:text-7xl"
             style={delay(80)}
@@ -40,6 +42,8 @@ export function AuthView() {
           Only the visual order changes; the DOM keeps the h1 first for screen readers. */}
       <section className="order-first flex items-center justify-center px-6 pt-20 pb-12 sm:px-12 lg:order-none lg:py-12">
         <div className="enter w-full max-w-sm" style={delay(200)}>
+          {/* phones/tablets: the form comes first on screen, so the logo leads it */}
+          <Logo height={40} className="mb-8 flex lg:hidden" />
           <h2 className="font-display text-4xl leading-tight">
             {isLogin ? "Your seat is saved" : "Take your seat"}
           </h2>

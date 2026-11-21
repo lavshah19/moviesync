@@ -36,8 +36,8 @@ export class MovieRepository {
     ).lean();
   }
 
+  // returns the deleted movie (the socket event needs its column), or null if nothing matched
   static async deleteByRecommender(id: string, addedBy: string) {
-    const { deletedCount } = await Movie.deleteOne({ _id: id, addedBy });
-    return deletedCount === 1;
+    return Movie.findOneAndDelete({ _id: id, addedBy }).lean();
   }
 }
