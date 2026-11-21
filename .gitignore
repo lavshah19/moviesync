@@ -3,3 +3,9 @@
 .agents/
 skills-lock.json
 **/.taste-skill/
+
+# secrets
+atlas-credentials.env
+*.env
+.env*
+!.env.example
